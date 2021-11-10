@@ -11,114 +11,123 @@ function callbackToPromise(func) {
   }
 }
 
-const databasefile = "./db.sqlite"
-
-let db;
-function getDatabase() {
-  if(!db)
+export default class Srb2KartDatabase {
+  constructor(file='./db.sqlite', cb) {
     sqlite3.verbose();
-    db = new sqlite3.Database(databasefile);
-  return db
-}
+    this.db = new sqlite3.Database(file);
+    this.initialize(cb);
+  }
 
-function closeDatabase() {
-  db.close();
-}
+  get sqlite3database() {
+    return this.db;
+  }
 
-function createDatabase(cb) {
-  db = getDatabase();
-  db.run(`
-    CREATE TABLE IF NOT EXISTS ServerBoot (
-      unixtime integer NOT NULL
-  )`);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS PlayerCountChange (
-      action CHAR NOT NULL,
-      node CHAR NOT NULL,
-      ip TEXT NOT NULL,
-      port TEXT NOT NULL,
-      unixtime integer NOT NULL
-  )`);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS PlayerRename (
-      oldName TEXT NOT NULL,
-      newName TEXT NOT NULL,
-      node integer NOT NULL,
-      ip TEXT NOT NULL,
-      port TEXT NOT NULL,
-      unixtime integer NOT NULL
-    )`);
-  db.close();
-}
+  clear(cb) {
+    this.db.serialize();
+    this.db.run(`
+      DROP TABLE IF EXISTS ServerBoot
+      `);
+    this.db.run(`
+      DROP TABLE IF EXISTS PlayerCountChange
+      `);
+    this.db.run(`
+      DROP TABLE IF EXISTS PlayerRename
+      `);
+    this.initialize(cb);
+    this.db.parallelize();
+  }
 
-function insertServerBoot(cb, {datetime = Date.now()}) {
-  db = getDatabase();
-  db.run(`
-    INSERT INTO ServerBoot (unixtime)
-    VALUES ($datetime)
-    `, datetime, cb);
-}
-const insertServerBootPromise = callbackToPromise(insertServerBoot);
+  close(cb) {
+    this.db.close(() => {this.db = undefined; cb()});
+  }
 
-function insertPlayerCountChange(cb, {isJoin, node, ip, port, datetime=Date.now()}) {
-  db = getDatabase();
-  db.run(`
-    INSERT INTO PlayerCountChange (action, node, ip, port, unixtime)
-    VALUES ($action, $ip, $node, $datetime)
-    `, {
-      action: (isJoin ? "join" : "leave"),
-      node,
-      ip,
-      port,
-      datetime,
-    }, cb);
-}
-const insertPlayerCountChangePromise = callbackToPromise(insertPlayerCountChange);
+  initialize(cb) {
+    Promise.all([new Promise((res, rej) => this.db.run(`
+      CREATE TABLE IF NOT EXISTS ServerBoot (
+        unixtime integer NOT NULL
+    )`, (e) => {
+      if(e) rej(e); res();
+    })),
+    new Promise((res, rej) => this.db.run(`;
+      CREATE TABLE IF NOT EXISTS PlayerCountChange (
+        action CHAR NOT NULL,
+        node CHAR NOT NULL,
+        ip TEXT NOT NULL,
+        port TEXT NOT NULL,
+        unixtime integer NOT NULL
+    )`, (e) => {
+      if(e) rej(e); res();
+    })),
+    new Promise((res, rej) => this.db.run(`
+      CREATE TABLE IF NOT EXISTS PlayerRename (
+        oldName TEXT NOT NULL,
+        newName TEXT NOT NULL,
+        node CHAR NOT NULL,
+        ip TEXT NOT NULL,
+        port TEXT NOT NULL,
+        unixtime integer NOT NULL
+      )`, (e) => {
+      if(e) rej(e); res();
+    }))]).then(() => cb());
+  }
 
-function insertPlayerRename(cb, {oldname, newname, node, ip, port, unixtime=Date.now()}) {
-  db = getDatabase();
-  db.run(`
-    INSERT INTO PlayerRename (oldname, newname, node, ip, port, unixtime)
-    VALUES ($oldname, $newname, $node, $ip, $port, $unixtime)
-    `, {
-      oldname,
-      newname,
-      node,
-      ip,
-      port,
-      unixtime
-    }, cb);
-}
-const insertPlayerRenamePromise = callbackToPromise(insertPlayerRename);
+  insertServerBoot({unixtime = Date.now()}, cb) {
+    this.db.run(`
+      INSERT INTO ServerBoot (unixtime)
+      VALUES ($unixtime)
+      `, unixtime, cb);
+  }
 
-function getPlayerChangeSinceLastBoot(cb) {
-  db = getDatabase();
-  db.get(`
-    SELECT unixtime FROM ServerBoot
-    ORDER BY unixtime DESC
-    LIMIT 1
-    `, (error, row) => {
-      if(error || !row?.unixtime) {
-        console.error(error);
-        return;
-      }
-      db.all(`
-        SELECT * FROM PlayerChange
-        WHERE PlayerChange.unixtime >= ?
-        `, row.unixtime, cb)
-    });
-}
-const getPlayerChangeSinceLastBootPromise = callbackToPromise(getPlayerChangeSinceLastBoot);
+  insertPlayerCountChange({isJoin, node, ip, port, unixtime=Date.now()}, cb) {
+    this.db.run(`
+      INSERT INTO PlayerCountChange (action, node, ip, port, unixtime)
+      VALUES ($action, $node, $ip, $port, $unixtime)
+      `, [
+        (isJoin ? "join" : "leave"),
+        node,
+        ip,
+        port,
+        unixtime,
+      ], cb);
+  }
 
+  insertPlayerRename({oldName, newName, node, ip, port, unixtime=Date.now()}, cb) {
+    this.db.run(`
+      INSERT INTO PlayerRename (oldname, newname, node, ip, port, unixtime)
+      VALUES ($oldName, $newName, $node, $ip, $port, $unixtime)
+      `, [
+        oldName,
+        newName,
+        node,
+        ip,
+        port,
+        unixtime
+      ], cb);
+  }
 
-export {
-  getDatabase,
-  closeDatabase,
-  createDatabase,
-  insertServerBoot,
-  insertServerBootPromise,
-  insertPlayerCountChange,
-  insertPlayerCountChangePromise,
-  getPlayerChangeSinceLastBoot,
-  getPlayerChangeSinceLastBootPromise,
+  getLastBoot(cb) {
+    this.db.get(`
+      SELECT unixtime FROM ServerBoot
+      ORDER BY unixtime DESC
+      LIMIT 1
+      `, cb);
+  }
+
+  getPlayerChangeSinceLastBoot(cb) {
+    this.getLastBoot(
+      (error, row) => {
+        if(error || !(row?.unixtime)) {
+          return;
+        }
+        this.db.all(`
+          SELECT * FROM PlayerCountChange 
+          WHERE PlayerCountChange.unixtime >= ?
+          `, row.unixtime, (error, row) => {
+            if(error) cb(error, row);
+            cb(error, row.map(({action, ...other}) => {
+              return {isJoin: action==='join',...other}
+            }));
+          })
+      });
+  }
 }
