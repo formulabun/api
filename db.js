@@ -68,7 +68,7 @@ export default class Srb2KartDatabase {
         unixtime integer NOT NULL
       )`, (e) => {
       if(e) rej(e); res();
-    }))]).then(() => cb());
+    }))]).then(cb);
   }
 
   insertServerBoot({unixtime = Date.now()}, cb) {
