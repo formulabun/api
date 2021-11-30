@@ -1,33 +1,54 @@
+import dotenv from 'dotenv';
 import express from 'express';
+import getSrb2Info from 'srb2kartinfoparse';
 const app = express();
-const port = 3030;
 
-app.get('/', (req, res, next) => {
-  res.body = {response: "hi there"};
-  next();
+const {
+  api_port,
+  kart_ip,
+  kart_port,
+  kart_maps_url,
+} = dotenv.config().parsed;
+
+app.get('/', (req, res) => {
+  res.redirect("/main");
 });
 
-// routers
-import {router as playerRouter} from './routes/players.js';
-import {router as serverRouter} from './routes/server.js';
+app.get("/:server", (req, res) => {
+  res.json({
+    links: [
+      {players: `./players`},
+      {server: `./server`},
+      {maps: `./maps`}
+    ]
+  });
+});
 
-const addRoute = (app, from, to, router) => {
-  app.use(`/${to}`, router);
-  app.use((req, res, next) => {
-    const body = res.body;
-    if(req.path !== from) return next();
-    body[to] = `http://localhost:3030/${to}`;
-    next();
+app.get("/:server/players", function (req, res) {
+  getSrb2Info(kart_ip, kart_port, () => {},
+    function(data) {
+      res.json(data)},
+    function(error) {
+      res.status(500).json(error)
+    });
+});
+
+app.get("/:server/server", function (req, res) {
+  getSrb2Info(kart_ip, kart_port,
+    function(data) {
+      res.json(data)},
+    () => {},
+    function(error) {
+      res.status(500).json(error)
+    });
+});
+
+app.get("/:server/maps", function (req, res) {
+  res.redirect(kart_maps_url);
+});
+
+export default () => {
+  app.listen(api_port, () => {
+    console.log(`express api started on ${api_port}`);
   });
 }
-
-addRoute(app, '/', 'players', playerRouter);
-addRoute(app, '/', 'server',  serverRouter);
-
-app.use((req, res) => {
-  res.json(res.body);
-});
-
-app.listen(port, () => {
-  console.log(`express api started on ${port}`);
-});

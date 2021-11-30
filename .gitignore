@@ -2,4 +2,7 @@
 node_modules
 
 # sqlite stuff
-db.sqlite # too big
+db.sqlite 
+
+#secrets
+.env 
