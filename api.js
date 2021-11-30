@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 import getSrb2Info from 'srb2kartinfoparse';
 const app = express();
 
@@ -10,6 +11,9 @@ const {
   kart_maps_url,
 } = dotenv.config().parsed;
 
+app.use('/:server/static', express.static('public'))
+app.use(cors());
+
 app.get('/', (req, res) => {
   res.redirect("/main");
 });
@@ -19,7 +23,7 @@ app.get("/:server", (req, res) => {
     links: [
       {players: `./players`},
       {server: `./server`},
-      {maps: `./maps`}
+      {maps: `./static/maps.json`}
     ]
   });
 });
@@ -41,10 +45,6 @@ app.get("/:server/server", function (req, res) {
     function(error) {
       res.status(500).json(error)
     });
-});
-
-app.get("/:server/maps", function (req, res) {
-  res.redirect(kart_maps_url);
 });
 
 export default () => {
