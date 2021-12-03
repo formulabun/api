@@ -1,3 +1,4 @@
+#!/usr/bin/node
 import { extractSoc } from 'srb2kartinfoparse/pk3parse.js';
 import parseSocFile from 'srb2kartinfoparse/socparse.js';
 import fetch from 'node-fetch';
@@ -5,12 +6,17 @@ import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
+import dotenv from 'dotenv';
 
 const pathname = path.resolve(os.homedir(), 'mods', 'index');
 const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name);
 const isSocFile = (name) => /.soc$/i.test(name);
 const isFormulabunFile = (name) => /^k_formulabun_v.*\.pk3$/i.test(name);
 const nameToPath = (name) => `${pathname}${path.sep}${name}`
+
+const {
+  socs_path
+} = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
 const outfile = path.resolve(os.homedir(), 'files', 'maps.json');
@@ -50,12 +56,13 @@ async function saveJSON(json) {
 async function update() {
   function loadSocFile(file, soc) {
     const kartfile = file.replace("soc", "kart")
+    const filepath = `${socs_path}/${file}`
     try {
-      fs.accessSync('./socs/'+file);
-      const content = fs.readFileSync('./socs/'+file, 'utf-8');
+      fs.accessSync(filepath);
+      const content = fs.readFileSync(filepath, 'utf-8');
       soc = parseSocFile(kartfile, content, soc);
     } catch {
-      console.log(`Please copy the soc from inside ${kartfile} to socs/${file}`)
+      console.log(`Please copy the soc from inside ${kartfile} to ${filepath}`)
       soc.pending = true;
     }
     return soc;
