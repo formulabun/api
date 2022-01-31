@@ -2,7 +2,10 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import getSrb2Info from 'srb2kartinfoparse';
+import Srb2KartDatabase from './db.js';
+
 const app = express();
+const db = new Srb2KartDatabase();
 
 const {
   api_port,
@@ -11,24 +14,43 @@ const {
   kart_maps_url,
 } = dotenv.config().parsed;
 
+function makeLinks(links, req) {
+  const toFullPath = ([rel, link]) => {
+    return {
+      rel,
+      url: `${req.protocol}://${req.get('host')}${req.path}${req.path.endsWith('/')  ? '' : '/'}${link}`}
+    };
+  return links.map(toFullPath);
+}
+
 app.use(cors());
-app.use('/:server/static', express.static('public'))
+app.use('/servers/:server/static', express.static('public'))
 
 app.get('/', (req, res) => {
-  res.redirect("/main");
-});
-
-app.get("/:server", (req, res) => {
   res.json({
-    links: [
-      {players: `./players`},
-      {server: `./server`},
-      {maps: `./static/maps.json`}
-    ]
+    links: makeLinks([['servers', 'servers'], ['discord', 'discord']], req)
   });
 });
 
-app.get("/:server/players", function (req, res) {
+app.get('/servers', (req, res) => {
+  res.redirect("/servers/main");
+});
+
+app.get('/discord', (req, res) => {
+  db.getDiscordMedia({}, (e, data) => {
+    if(e) res.status(500).send("oops");
+    res.json(data);
+  })
+});
+
+app.get("/servers/:server", (req, res) => {
+  makeLinks(['servers', 'discord'], req);
+  res.json({
+    links: makeLinks([['players', 'players'], ['server', 'server'], ['maps', 'static/maps.json']],req)
+  });
+});
+
+app.get("/servers/:server/players", function (req, res) {
   getSrb2Info(kart_ip, kart_port, () => {},
     function(data) {
       res.json(data)},
@@ -37,7 +59,7 @@ app.get("/:server/players", function (req, res) {
     });
 });
 
-app.get("/:server/server", function (req, res) {
+app.get("/servers/:server/server", function (req, res) {
   getSrb2Info(kart_ip, kart_port,
     function(data) {
       res.json(data)},

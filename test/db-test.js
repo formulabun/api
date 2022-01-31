@@ -6,12 +6,14 @@ describe("DB", function() {
   var db
   before(function(done) {
     db = new Srb2KartDatabase(":memory:", (e) => {
-      if(e) console.error("error", e); done();
+      if(e.reduce((curr, next) => !isNaN(next) || curr , false))
+        console.error("error", e);
+      done();
     })
   })
 
   beforeEach(function(done) {
-    db.clear(done);
+    db.clear(() => done());
     /*db.close(() => {
       db = new Srb2KartDatabase(":memory:", done);
     });*/
@@ -96,6 +98,19 @@ describe("DB", function() {
             expect(e).to.be.null;
             expect(row).to.deep.equal(playerRename);
           });
+      });
+    });
+  });
+
+  describe('Table DiscordMedia', function() {
+    it('should have data previously entered', function() {
+      const url = "http://example.com"
+      db.insertDiscordMedia({url}, () => {
+        db.getDiscordMedia({}, (e, d) => {
+          expect(e).to.be.null;
+          expect(d).to.have.lengthOf(1);
+          expect(d[0].url).to.be.equal(url);
+        });
       });
     });
   });

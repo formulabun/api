@@ -68,7 +68,15 @@ export default class Srb2KartDatabase {
         unixtime integer NOT NULL
       )`, (e) => {
       if(e) rej(e); res();
-    }))]).then(cb);
+    })),
+    new Promise((res, rej) => this.db.run(`
+      CREATE TABLE IF NOT EXISTS DiscordMedia (
+        url TEXT NOT NULL UNIQUE,
+        unixtime integer NOT NULL
+      )`, (e) => {
+        if(e) rej(e); res();
+    })),
+    ]).then(cb);
   }
 
   insertServerBoot({unixtime = Date.now()}, cb) {
@@ -105,6 +113,16 @@ export default class Srb2KartDatabase {
       ], cb);
   }
 
+  insertDiscordMedia({url, unixtime=Date.now()}, cb) {
+    this.db.run(`
+    INSERT INTO DiscordMedia (url, unixtime)
+    VALUES ($url, $unixtime)
+    `, [
+      url,
+      unixtime
+    ], cb);
+  }
+
   getLastBoot(cb) {
     this.db.get(`
       SELECT unixtime FROM ServerBoot
@@ -129,5 +147,17 @@ export default class Srb2KartDatabase {
             }));
           })
       });
+  }
+
+  getDiscordMedia({limit=10, from=0}, cb) {
+    this.db.all(`
+      SELECT url FROM DiscordMedia
+      ORDER BY unixtime DESC
+      LIMIT $limit OFFSET $from
+    `, [
+      limit,
+      from
+    ],cb);
+    
   }
 }
