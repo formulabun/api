@@ -17,7 +17,7 @@
     "srb2kartinfoparse": "^1.2.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "mocha -j 1",
     "start": "node main.js"
   },
   "author": "Fl_GUI"

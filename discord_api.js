@@ -10,7 +10,7 @@ const {
   discord_curator_emoji,
 } = dotenv.config().parsed;
 
-function gifEmbedFilter(message) {
+export function gifEmbedFilter(message) {
   if( ! message.attachments ) return;
   return message.attachments.map(a => a.url);
 }
@@ -35,7 +35,7 @@ async function fetchMessagesToCache(client) {
   channel.messages.fetch({limit:50});
 }
 
-async function startClient() {
+function startClient() {
   const client = new Client();
   client.login(discord_token);
 
@@ -64,6 +64,6 @@ async function startClient() {
   return client;
 }
 
-export default async function startDiscord() {
+export default function startDiscord() {
   return startClient();
 }
