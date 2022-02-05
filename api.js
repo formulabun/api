@@ -26,6 +26,10 @@ function makeLinks(links, req) {
 app.use(cors());
 app.use('/servers/:server/static', express.static('public'))
 
+app.use('/main/server', (req, res) => {
+  res.send("Hi Not!");
+});
+
 app.get('/', (req, res) => {
   res.json({
     links: makeLinks([['servers', 'servers'], ['discord', 'discord']], req)

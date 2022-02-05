@@ -18,7 +18,8 @@
   },
   "scripts": {
     "test": "mocha -j 1",
-    "start": "node main.js"
+    "start": "node main.js",
+    "dev": "nodemon main.js"
   },
   "author": "Fl_GUI"
 }
