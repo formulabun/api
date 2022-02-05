@@ -10,15 +10,16 @@ const {
   discord_curator_emoji,
 } = dotenv.config().parsed;
 
-export function gifEmbedFilter(message) {
-  if( ! message.attachments ) return;
-  return message.attachments.map(a => a.url);
-}
+export function getContentFromMessage(message) {
+  let content = [];
+  if(message.attachments) {
+    content = message.attachments.map(a => a.url);   
+  }
 
-function getContentFromMessage(message) {
-  const filters = [gifEmbedFilter];
-  const res = filters.map(f => f(message));;
-  return _.flattenDepth(res, 2);
+  if(message.embeds) {
+    content = content.concat(message.embeds.map(a => a.url));
+  }
+  return content;
 }
 
 async function isCuratorReaction(user, reaction) {
