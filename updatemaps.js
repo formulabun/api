@@ -19,7 +19,7 @@ const {
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
-const outfile = path.resolve(os.homedir(), 'files', 'maps.json');
+const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
 
 async function downloadFiles() {
   const filecachedir = fs.mkdirSync(pathname, {recursive:true});

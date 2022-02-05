@@ -18,7 +18,7 @@ function makeLinks(links, req) {
   const toFullPath = ([rel, link]) => {
     return {
       rel,
-      url: `${req.protocol}://${req.get('host')}${req.path}${req.path.endsWith('/')  ? '' : '/'}${link}`}
+      url: `${req.protocol}://${kart_ip}${req.path}${req.path.endsWith('/')  ? '' : '/'}${link}`}
     };
   return links.map(toFullPath);
 }
