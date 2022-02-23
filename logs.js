@@ -1,5 +1,5 @@
 import Srb2KartDatabase from './db.js';
-import logger from 'srb2kartinfoparse/log.js';
+import {logger} from 'srb2kartjs';
 
 export default  function startLogging() {
   (async () => {

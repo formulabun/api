@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import getSrb2Info from 'srb2kartinfoparse';
+import {getSrb2Info} from 'srb2kartjs';
 import Srb2KartDatabase from './db.js';
 
 const app = express();
