@@ -2,12 +2,17 @@ import {Client} from 'discord.js'
 import dotenv from 'dotenv';
 import _ from 'lodash';
 import Srb2KartDatabase from './db.js';
+import FormulaBunBot from './discord/client.js';
+import {getSrb2Info} from 'srb2kartjs';
 
 const {
   discord_token,
   discord_media_channel,
   discord_curator_role,
   discord_curator_emoji,
+  kart_ip,
+  kart_port,
+  INTERVAL,
 } = dotenv.config().parsed;
 
 export function getContentFromMessage(message) {
@@ -37,7 +42,7 @@ async function fetchMessagesToCache(client) {
 }
 
 function startClient() {
-  const client = new Client();
+  const client = new FormulaBunBot();
   client.login(discord_token);
 
   const db = new Srb2KartDatabase();
@@ -62,6 +67,26 @@ function startClient() {
 
   client.on('messageReactionRemove', () => fetchMessagesToCache(client));
   client.on('messageReactionAdd', () => fetchMessagesToCache(client));
+
+  setInterval(() => {
+    getSrb2Info(
+      kart_ip,
+      kart_port,
+      (serverinfo) => {
+        client.serverinfo = serverinfo;
+      },
+      (playerinfo) => {
+        client.playerinfo = playerinfo;
+      },
+      (error) => {
+        client.error = error;
+      }
+    );
+  }, parseInt(INTERVAL));
+
+  process.on('exit', () => 
+    client.destroy()
+  );
   return client;
 }
 
