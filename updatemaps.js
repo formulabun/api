@@ -1,6 +1,5 @@
 #!/usr/bin/node
-import { extractSoc } from 'srb2kartinfoparse/pk3parse.js';
-import parseSocFile from 'srb2kartinfoparse/socparse.js';
+import {openFile, parseSocFile} from "srb2kartjs";
 import fetch from 'node-fetch';
 import os from 'os';
 import fs from 'fs';
@@ -8,7 +7,8 @@ import path from 'path';
 import _ from 'lodash';
 import dotenv from 'dotenv';
 
-const pathname = path.resolve(os.homedir(), 'mods', 'index');
+//const pathname = path.resolve(os.homedir(), 'mods', 'index');
+const pathname = path.resolve(os.homedir(), '.cache', 'formulabun-web', 'soc');
 const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name);
 const isSocFile = (name) => /.soc$/i.test(name);
 const isFormulabunFile = (name) => /^k_formulabun_v.*\.pk3$/i.test(name);
@@ -19,7 +19,7 @@ const {
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
-const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
+const outfile = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public', 'maps.json');
 
 async function downloadFiles() {
   const filecachedir = fs.mkdirSync(pathname, {recursive:true});
@@ -76,18 +76,23 @@ async function update() {
 
   for(const file of filenames.filter(isMapPack)) {
     try {
-      soc = await extractSoc(nameToPath(file), soc);
+      const modfile = await openFile(nameToPath(file));
+      const filesoc = await modfile.getAllSocs();
+      _.merge(soc, filesoc); // ;-;
     } catch (e) {
+      console.error(e);
       console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
       soc.pending = true;
     }
   }
   const fbunFile = filenames.map(p => path.basename(p)).filter(isFormulabunFile)[0]; 
   try {
-    soc = await extractSoc(nameToPath(fbunFile), soc);
+    const bunfile = await openFile(nameToPath(fbunFile));
+    const bunsoc = await bunfile.getAllSocs();
+    _.merge(soc, bunsoc);
   } catch(e) {
-      console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
-      soc.pending = true;
+    console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
+    soc.pending = true;
   }
 
   soc.state = undefined;
@@ -97,8 +102,8 @@ async function update() {
     soc.level[key].mapid = key;
     return soc.level[key];
   }).map(o => {
-      o.hidden = o.hidden || false;
-      return o
+    o.hidden = o.hidden || false;
+    return o
   }).filter(o => o.typeoflevel.toLowerCase() !== 'singleplayer'), ["mapid"]);
 
   saveJSON(content);
