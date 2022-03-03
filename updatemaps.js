@@ -15,7 +15,8 @@ const isFormulabunFile = (name) => /^k_formulabun_v.*\.pk3$/i.test(name);
 const nameToPath = (name) => `${pathname}${path.sep}${name}`
 
 const {
-  socs_path
+  socs_path,
+  host
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
@@ -80,6 +81,7 @@ async function update() {
         const foundDir = dir.search(imageRegEx);
         const imageSavePath = path.join(publicDir, "imgs/", `${imagename}.png`);
         try {
+          if(level == 'vj') throw new Error("Fuck this shit of overwriting stuff I hate it.");
           fs.accessSync(imageSavePath);
         } catch {
           let stream;
@@ -130,6 +132,11 @@ async function update() {
   try {
     const bunfile = await openFile(nameToPath(fbunFile));
     const bunsoc = await bunfile.getAllSocs();
+    for(let level in bunsoc.level) {
+      if(bunsoc.level.hasOwnProperty(level)) {
+        delete bunsoc.level[level].mappack;
+      }
+    }
     _.merge(soc, bunsoc);
   } catch(e) {
     console.log(e);
@@ -142,7 +149,7 @@ async function update() {
 
   const content = _.sortBy(Object.keys(soc.level).map(key => {
     soc.level[key].mapid = key;
-    soc.level[key].thumbnail = `http://localhost:3030/servers/main/static/imgs/MAP${key.toUpperCase()}P.png`;
+    soc.level[key].thumbnail = `http://${host}/servers/main/static/imgs/MAP${key.toUpperCase()}P.png`;
     return soc.level[key];
   }).map(o => {
     o.hidden = o.hidden || false;
