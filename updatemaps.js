@@ -71,7 +71,7 @@ async function update() {
   }
 
   async function saveMapThumbnails(file) {
-    await file.setBaseFile(`${socs_path}/srb2.pk3`);
+    await file.setBaseFile(`${socs_path}/srb2.srb`);
     const socs = await file.getAllSocs();
     const dir = file.getDirectory();
     for (let level in socs.level) {
@@ -103,8 +103,6 @@ async function update() {
   const filenames = await downloadFiles();
   var soc = {}
   soc.pending = false;
-  soc = loadSocFile('maps.soc', soc)
-  soc = loadSocFile('patch.soc', soc)
 
   try {
     fs.accessSync(`${socs_path}/maps.kart`);
