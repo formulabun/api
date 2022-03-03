@@ -6,3 +6,13 @@ db.sqlite
 
 #secrets
 .env 
+
+# public files
+public/maps.json
+public/imgs/*
+
+# kart files
+kartfiles/*
+
+# not sure really
+.nyc_output

@@ -1,6 +1,5 @@
 #!/usr/bin/node
-import { extractSoc } from 'srb2kartinfoparse/pk3parse.js';
-import parseSocFile from 'srb2kartinfoparse/socparse.js';
+import {openFile, parseSocFile} from "srb2kartjs";
 import fetch from 'node-fetch';
 import os from 'os';
 import fs from 'fs';
@@ -8,18 +7,21 @@ import path from 'path';
 import _ from 'lodash';
 import dotenv from 'dotenv';
 
-const pathname = path.resolve(os.homedir(), 'mods', 'index');
-const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name);
+//const pathname = path.resolve(os.homedir(), 'mods', 'index');
+const pathname = path.resolve(os.homedir(), '.cache', 'formulabun-web', 'soc');
+const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name) || /.*\.kart$/.test(name);
 const isSocFile = (name) => /.soc$/i.test(name);
 const isFormulabunFile = (name) => /^k_formulabun_v.*\.pk3$/i.test(name);
 const nameToPath = (name) => `${pathname}${path.sep}${name}`
 
 const {
-  socs_path
+  socs_path,
+  host
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
-const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
+const outfile = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public', 'maps.json');
+const publicDir = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public');
 
 async function downloadFiles() {
   const filecachedir = fs.mkdirSync(pathname, {recursive:true});
@@ -68,26 +70,78 @@ async function update() {
     return soc;
   }
 
+  async function saveMapThumbnails(file) {
+    await file.setBaseFile(`${socs_path}/srb2.pk3`);
+    const socs = await file.getAllSocs();
+    const dir = file.getDirectory();
+    for (let level in socs.level) {
+      if(socs.level.hasOwnProperty(level)) {
+        const imagename = `MAP${level.toUpperCase()}P`;
+        const imageRegEx = new RegExp(`${imagename}.*$`);
+        const foundDir = dir.search(imageRegEx);
+        const imageSavePath = path.join(publicDir, "imgs/", `${imagename}.png`);
+        try {
+          if(level == 'vj') throw new Error("Fuck this shit of overwriting stuff I hate it.");
+          fs.accessSync(imageSavePath);
+        } catch {
+          let stream;
+          if(foundDir.length == 1) {
+            stream = await file.getImage(foundDir[0].fullpath);
+          } else {
+            const path = dir.search(/graphics/i)[0].allFiles().filter(p => imageRegEx.test(p))[0];
+            if (path) stream = await file.getImage(path);
+            else throw new Error('something went wrong with ', dir.search(/graphics?/i)[0].search(/MAP..P.*/));
+          }
+          if(!stream) throw new Error(`could not create png stream for image ${imagename}`);
+          const filestream = fs.createWriteStream(imageSavePath);
+          stream.pipe(filestream);
+        }
+      }
+    }
+  }
+
   const filenames = await downloadFiles();
   var soc = {}
   soc.pending = false;
   soc = loadSocFile('maps.soc', soc)
   soc = loadSocFile('patch.soc', soc)
 
+  try {
+    fs.accessSync(`${socs_path}/maps.kart`);
+    fs.accessSync(`${socs_path}/patch.kart`);
+    fs.copyFileSync(`${socs_path}/maps.kart`, nameToPath("maps.kart"));
+    fs.copyFileSync(`${socs_path}/patch.kart`, nameToPath("patch.kart"));
+    filenames.push("maps.kart", "patch.kart");
+  } catch {
+    console.log(`Please copy the maps.kart and patch.kart files to ${socs_path}`)
+  }
+
   for(const file of filenames.filter(isMapPack)) {
     try {
-      soc = await extractSoc(nameToPath(file), soc);
+      const modfile = await openFile(nameToPath(file));
+      const filesoc = await modfile.getAllSocs();
+      await saveMapThumbnails(modfile);
+      _.merge(soc, filesoc); // ;-;
     } catch (e) {
       console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
       soc.pending = true;
     }
   }
+
   const fbunFile = filenames.map(p => path.basename(p)).filter(isFormulabunFile)[0]; 
   try {
-    soc = await extractSoc(nameToPath(fbunFile), soc);
+    const bunfile = await openFile(nameToPath(fbunFile));
+    const bunsoc = await bunfile.getAllSocs();
+    for(let level in bunsoc.level) {
+      if(bunsoc.level.hasOwnProperty(level)) {
+        delete bunsoc.level[level].mappack;
+      }
+    }
+    _.merge(soc, bunsoc);
   } catch(e) {
-      console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
-      soc.pending = true;
+    console.log(e);
+    console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
+    soc.pending = true;
   }
 
   soc.state = undefined;
@@ -95,11 +149,12 @@ async function update() {
 
   const content = _.sortBy(Object.keys(soc.level).map(key => {
     soc.level[key].mapid = key;
+    soc.level[key].thumbnail = `http://${host}/servers/main/static/imgs/MAP${key.toUpperCase()}P.png`;
     return soc.level[key];
   }).map(o => {
-      o.hidden = o.hidden || false;
-      return o
-  }).filter(o => o.typeoflevel.toLowerCase() !== 'singleplayer'), ["mapid"]);
+    o.hidden = o.hidden || false;
+    return o
+  }), ["mapid"]);
 
   saveJSON(content);
 }

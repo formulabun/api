@@ -12,13 +12,14 @@ const {
   kart_ip,
   kart_port,
   kart_maps_url,
+  host
 } = dotenv.config().parsed;
 
 function makeLinks(links, req) {
   const toFullPath = ([rel, link]) => {
     return {
       rel,
-      url: `${req.protocol}://${kart_ip}${req.path}${req.path.endsWith('/')  ? '' : '/'}${link}`}
+      url: `${req.protocol}://${host}${req.path}${req.path.endsWith('/')  ? '' : '/'}${link}`}
     };
   return links.map(toFullPath);
 }
