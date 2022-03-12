@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 const pathname = path.resolve(os.homedir(), '.cache', 'formulabun-web', 'soc');
 const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name) || /.*\.kart$/.test(name);
 const isSocFile = (name) => /.soc$/i.test(name);
-const isFormulabunFile = (name) => /^k_formulabun_v.*\.pk3$/i.test(name);
+const isFormulabunFile = (name) => /^k.*_formulabun_v.*\.pk3$/i.test(name);
 const nameToPath = (name) => `${pathname}${path.sep}${name}`
 
 const {
@@ -20,8 +20,8 @@ const {
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
-const outfile = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public', 'maps.json');
-const publicDir = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public');
+const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
+const publicDir = path.resolve(os.homedir(), 'api', 'public');
 
 async function downloadFiles() {
   const filecachedir = fs.mkdirSync(pathname, {recursive:true});
