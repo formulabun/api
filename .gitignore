@@ -3,6 +3,7 @@ node_modules
 
 # sqlite stuff
 db.sqlite 
+db.sqlite3
 
 #secrets
 .env 
