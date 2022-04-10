@@ -2,7 +2,7 @@ import {Client} from 'discord.js'
 import dotenv from 'dotenv';
 import _ from 'lodash';
 import Srb2KartDatabase from './db.js';
-import FormulaBunBot from './discord/client.js';
+import login from './discord/client/interactive.js';
 import {getSrb2Info} from 'srb2kartjs';
 
 const {
@@ -41,32 +41,8 @@ async function fetchMessagesToCache(client) {
   channel.messages.fetch({limit:50});
 }
 
-function startClient() {
-  const client = new FormulaBunBot();
-  client.login(discord_token);
-
-  const db = new Srb2KartDatabase();
-
-  client.on('ready', async () =>  {
-    fetchMessagesToCache(client);
-  });
-
-  client.on('messageReactionAdd', async (reaction, user) => {
-    if( !await isCuratorReaction(user, reaction) ) return;
-    const content = getContentFromMessage(reaction.message);
-    content.forEach(c => db.insertDiscordMedia({url:c}, () => {
-      console.log("new message reaction");
-      console.log(content);
-    }));
-  });
-
-  client.on('messageReactionRemove', async (reaction, user) => {
-    if( !await isCuratorReaction(user, reaction) ) return;
-    console.log("message reaction removed");
-  });
-
-  client.on('messageReactionRemove', () => fetchMessagesToCache(client));
-  client.on('messageReactionAdd', () => fetchMessagesToCache(client));
+async function startClient() {
+  const client = await login();
 
   setInterval(() => {
     getSrb2Info(
@@ -87,7 +63,43 @@ function startClient() {
   process.on('exit', () => 
     client.destroy()
   );
+
   return client;
+}
+
+export function curatedContent(client, db) {
+  client.on('ready', async () =>  {
+    fetchMessagesToCache(client);
+  });
+
+  client.on('messageReactionAdd', async (reaction, user) => {
+    if( !await isCuratorReaction(user, reaction) ) return;
+    const content = getContentFromMessage(reaction.message);
+    content.forEach(c => db.insertDiscordMedia({url:c}, () => {
+      console.log("new message reaction");
+      console.log(content);
+    }));
+  });
+
+  client.on('messageReactionRemove', async (reaction, user) => {
+    if( !await isCuratorReaction(user, reaction) ) return;
+    console.log("message reaction removed");
+  });
+
+  client.on('messageReactionRemove', () => fetchMessagesToCache(client));
+  client.on('messageReactionAdd', () => fetchMessagesToCache(client));
+}
+
+export function voteResults(client, emitter, db) {
+  emitter.on("voteComplete", ({passed, vote}) => {
+    db.getDiscordEventChannels((errors, channelRows) => {
+      const channels = channelRows.map(e => e.channelID);
+      if (vote.command === "noevent")
+        client.sendMessageToMultiple("The current event is cancelled :(", channels);
+      else if (vote.command == "yesevent")
+        client.sendMessageToMultiple("Event has started again :D", channels);
+    });
+  });
 }
 
 export default function startDiscord() {

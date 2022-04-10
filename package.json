@@ -13,14 +13,15 @@
     "express": "^4.17.1",
     "lodash": "^4.17.21",
     "mocha": "^9.1.3",
+    "prompt": "^1.2.2",
     "sqlite": "^4.0.23",
     "sqlite3": "^5.0.2",
-    "srb2kartjs": "^2.2.3"
+    "srb2kartjs": "^2.2.6"
   },
   "scripts": {
     "test": "mocha -j 1",
     "start": "cross-env DISCORDBOT_ENV=deploy node main.js",
-    "dev": "cross-env DISCORDBOT_ENV=test node main.js"
+    "dev": "cross-env DISCORDBOT_ENV=test nodemon main.js"
   },
   "author": "Fl_GUI"
 }

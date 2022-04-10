@@ -12,7 +12,7 @@ function callbackToPromise(func) {
 }
 
 export default class Srb2KartDatabase {
-  constructor(file='./db.sqlite', cb) {
+  constructor(file='./db.sqlite3', cb) {
     sqlite3.verbose();
     this.db = new sqlite3.Database(file);
     this.initialize(cb);
@@ -76,6 +76,22 @@ export default class Srb2KartDatabase {
       )`, (e) => {
         if(e) rej(e); res();
     })),
+    new Promise((res, rej) => this.db.run(`
+      CREATE TABLE IF NOT EXISTS
+        EventChannels (
+          channelID PRIMARY KEY
+        )
+    `, (e) => {
+      if(e) rej(e); res();
+    })),
+    new Promise((res, rej) => this.db.run(`
+      CREATE TABLE IF NOT EXISTS
+        UpdateChannels (
+          channelID PRIMARY KEY
+        )
+    `, (e) => {
+      if(e) rej(e); res();
+    })),
     ]).then(cb);
   }
 
@@ -123,6 +139,24 @@ export default class Srb2KartDatabase {
     ], cb);
   }
 
+  _insertDiscordChannel({channelId}, column, cb) {
+    if (column !== "UpdateChannels" && column !== "EventChannels")
+      throw new Error("incorrect column name");
+    if (typeof channelId != "string")
+      throw new Error("channelId must be a string");
+    this.db.prepare(`
+      INSERT OR IGNORE INTO ${column} VALUES (?)
+    `).run(channelId.toString(), cb);
+  }
+
+  insertDiscordUpdateChannel(args, cb) {
+    this._insertDiscordChannel(args, "UpdateChannels", cb);
+  }
+
+  insertDiscordEventChannel(args, cb) {
+    this._insertDiscordChannel(args, "EventChannels", cb);
+  }
+
   getLastBoot(cb) {
     this.db.get(`
       SELECT unixtime FROM ServerBoot
@@ -159,5 +193,21 @@ export default class Srb2KartDatabase {
       from
     ],cb);
     
+  }
+
+  _getDiscordChannels(column, cb) {
+    if (column !== "UpdateChannels" && column !== "EventChannels")
+      throw new Error("incorrect column name");
+    this.db.all(`
+      SELECT * FROM ${column}
+    `, cb);
+  }
+
+  getDiscordUpdateChannels(cb) {
+    this._getDiscordChannels("UpdateChannels", cb);
+  }
+
+  getDiscordEventChannels(cb) {
+    this._getDiscordChannels("EventChannels", cb);
   }
 }
