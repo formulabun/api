@@ -1,6 +1,5 @@
 import prompt from "prompt";
 import Srb2KartDatabase from "./db.js";
-import {callbackToPromise} from "./db.js";
 
 const schema = {
   properties: {

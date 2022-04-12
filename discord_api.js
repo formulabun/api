@@ -92,6 +92,7 @@ export function curatedContent(client, db) {
 
 export function voteResults(client, emitter, db) {
   emitter.on("voteComplete", ({passed, vote}) => {
+    if (!passed) return;
     db.getDiscordEventChannels((errors, channelRows) => {
       const channels = channelRows.map(e => e.channelID);
       if (vote.command === "noevent")
