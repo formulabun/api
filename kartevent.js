@@ -43,12 +43,11 @@ const index = random.integer(0, messages.length-1)
 const msg = messages[index];
 
 login(discord_token).then(client => {
-  console.log(discord_token)
   const db = new Srb2KartDatabase();
   db.initialize(() => {
     db.getDiscordEventChannels((err, rows) => {
       const channels = rows.map(e => e.channelID);
-      client.sendMessageToMultiple(msg, channels).then(() => client.destroy());
+      client.sendMessageToMultiple(msg, channels).then(() => client.destroy()).catch(() => client.destroy());
     })
   })
 })

@@ -16,5 +16,5 @@ import {
   // consume
   startApi(db);
   curatedContent(discord, db);
-  voteResults(discord, logEmitter, db);
+  //voteResults(discord, logEmitter, db);
 })();
