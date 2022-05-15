@@ -12,7 +12,6 @@ const {
   api_port,
   kart_ip,
   kart_port,
-  kart_maps_url,
   host
 } = dotenv.config().parsed;
 
