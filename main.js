@@ -1,11 +1,11 @@
-import startLogging from './logs.js';
-import startApi from './api.js';
-import startDiscord from './discord_api.js';
-import Srb2KartDatabase from './db.js';
+import startLogging from './logs/index.js';
+import startApi from './webapi/index.js';
+import startDiscord from './discord/index.js';
+import Srb2KartDatabase from './database/db.js';
 import {
   curatedContent,
-  voteResults
-} from './discord_api.js';
+  sinkMessage
+} from './discord/index.js';
 
 (async () => {
   // produce
@@ -16,5 +16,5 @@ import {
   // consume
   startApi(db);
   curatedContent(discord, db);
-  //voteResults(discord, logEmitter, db);
+  sinkMessage(discord, logEmitter, db);
 })();

@@ -1,4 +1,3 @@
-[submodule "discord"]
-	path = discord
+[submodule "discord/client"]
+	path = discord/client
 	url = git@github.com:formulabun/srb2kart-discordbot.git
-	branch = fbun

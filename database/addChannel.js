@@ -17,7 +17,7 @@ const schema = {
 };
 
 (async () => {
-  const db = new Srb2KartDatabase();
+  const db = new Srb2KartDatabase("../db.sqlite3");
   prompt.start();
 
   prompt.get(schema, async (err, result) => {

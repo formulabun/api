@@ -8,11 +8,20 @@ import _ from 'lodash';
 import dotenv from 'dotenv';
 
 //const pathname = path.resolve(os.homedir(), 'mods', 'index');
+//
 const pathname = path.resolve(os.homedir(), '.cache', 'formulabun-web', 'soc');
 const isMapPack = (name) => /^[A-Z]*R[A-Z]*.*\.pk3$/i.test(name) || /.*\.kart$/.test(name);
 const isSocFile = (name) => /.soc$/i.test(name);
-const isFormulabunFile = (name) => /^k.*_formulabun_v.*\.pk3$/i.test(name);
+const isFormulabunFile = (name) => /^k.*_formulabun_.*\.pk3$/i.test(name);
 const nameToPath = (name) => `${pathname}${path.sep}${name}`
+export function mapToFullname(map) {
+  const parts = [
+    map.levelname || "",
+    map.nozone ? "" : map.zonetitle || "Zone",
+    map.act || ""
+  ].filter(a => a)
+  return parts.join(" ");
+}
 
 const {
   socs_path,
@@ -20,8 +29,11 @@ const {
 } = dotenv.config().parsed;
 
 const kart_hostname = "formulabun.club"
-const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
-const publicDir = path.resolve(os.homedir(), 'api', 'public');
+//const outfile = path.resolve(os.homedir(), 'api', 'public', 'maps.json');
+//const publicDir = path.resolve(os.homedir(), 'api', 'public');
+
+const outfile = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public', 'maps.json');
+const publicDir = path.resolve(os.homedir(), 'repos', 'formulabun', 'api', 'public');
 
 async function downloadFiles() {
   const filecachedir = fs.mkdirSync(pathname, {recursive:true});
@@ -121,6 +133,8 @@ async function update() {
       await saveMapThumbnails(modfile);
       _.merge(soc, filesoc); // ;-;
     } catch (e) {
+      console.log("error with map ", nameToPath(file));
+      console.log(e);
       console.log("Feel free to ignore previous error message. Fetching large files takes a while but only has to be done once");
       soc.pending = true;
     }
@@ -148,6 +162,7 @@ async function update() {
   const content = _.sortBy(Object.keys(soc.level).map(key => {
     soc.level[key].mapid = key;
     soc.level[key].thumbnail = `http://${host}/servers/main/static/imgs/MAP${key.toUpperCase()}P.png`;
+    soc.level[key].fullname = mapToFullname(soc.level[key]);
     return soc.level[key];
   }).map(o => {
     o.hidden = o.hidden || false;

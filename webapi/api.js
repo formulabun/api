@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import {getSrb2Info} from 'srb2kartjs';
-import Srb2KartDatabase from './db.js';
+import Srb2KartDatabase from '../database/db.js';
+import addMapRoutes from "./maps.js";
 
 const app = express();
 const db = new Srb2KartDatabase();
@@ -27,10 +28,6 @@ function makeLinks(links, req) {
 app.use(cors());
 app.use('/servers/:server/static', express.static('public'))
 
-app.use('/main/server', (req, res) => {
-  res.send("Hi Not!");
-});
-
 app.get('/', (req, res) => {
   res.json({
     links: makeLinks([['servers', 'servers'], ['discord', 'discord']], req)
@@ -51,7 +48,7 @@ app.get('/discord', (req, res) => {
 app.get("/servers/:server", (req, res) => {
   makeLinks(['servers', 'discord'], req);
   res.json({
-    links: makeLinks([['players', 'players'], ['server', 'server'], ['maps', 'static/maps.json']],req)
+    links: makeLinks([['players', 'players'], ['server', 'server'], ['maps', 'maps']],req)
   });
 });
 
@@ -73,6 +70,8 @@ app.get("/servers/:server/server", function (req, res) {
       res.status(500).json(error)
     });
 });
+
+addMapRoutes(app);
 
 export default () => {
   app.listen(api_port, () => {

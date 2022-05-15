@@ -1,4 +1,3 @@
-import Srb2KartDatabase from './db.js';
 import {logger} from 'srb2kartjs';
 import dotenv from 'dotenv';
 

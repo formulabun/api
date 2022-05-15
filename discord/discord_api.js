@@ -1,8 +1,7 @@
 import {Client} from 'discord.js'
 import dotenv from 'dotenv';
 import _ from 'lodash';
-import Srb2KartDatabase from './db.js';
-import login from './discord/client/interactive.js';
+import login from './client/client/interactive.js';
 import {getSrb2Info} from 'srb2kartjs';
 
 const {
@@ -99,6 +98,15 @@ export function voteResults(client, emitter, db) {
         client.sendMessageToMultiple("The current event is cancelled :(", channels);
       else if (vote.command == "yesevent")
         client.sendMessageToMultiple("Event has started again :D", channels);
+    });
+  });
+}
+
+export function sinkMessage(client, emitter, db) {
+  emitter.on("kitchenSinkHit", ({player}) => {
+    db.getDiscordUpdateChannels((errors, channelRows) => {
+      const channels = channelRows.map(e => e.channelID);
+      client.sendMessageToMultiple(`${player.name} just got hit by a sink lmao.`, channels);
     });
   });
 }
