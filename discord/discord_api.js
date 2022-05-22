@@ -1,4 +1,4 @@
-import {Client} from 'discord.js'
+import {Client, Intents} from 'discord.js'
 import dotenv from 'dotenv';
 import _ from 'lodash';
 import login from './client/client/interactive.js';
@@ -27,8 +27,8 @@ export function getContentFromMessage(message) {
 }
 
 async function isCuratorReaction(user, reaction) {
-  const member = await reaction.message.guild?.members.fetch(user.id);
-  const is_curator = member.roles.cache.get(discord_curator_role) || false;
+  const member = await reaction.message.guild?.members.fetch(user);
+  const is_curator = member.roles.resolveId(discord_curator_role) || false;
 
   const is_emoji = reaction.emoji.id === discord_curator_emoji;
 
@@ -37,11 +37,11 @@ async function isCuratorReaction(user, reaction) {
 
 async function fetchMessagesToCache(client) {
   const channel = await client.channels.fetch(discord_media_channel);
-  channel.messages.fetch({limit:50});
+  const messages = await channel.messages.fetch({limit:50});
 }
 
 async function startClient() {
-  const client = await login();
+  const client = await login([Intents.FLAGS.GUILD_MESSAGE_REACTIONS]);
 
   setInterval(() => {
     getSrb2Info(
@@ -72,6 +72,7 @@ export function curatedContent(client, db) {
   });
 
   client.on('messageReactionAdd', async (reaction, user) => {
+    console.log("reaction");
     if( !await isCuratorReaction(user, reaction) ) return;
     const content = getContentFromMessage(reaction.message);
     content.forEach(c => db.insertDiscordMedia({url:c}, () => {
@@ -81,6 +82,7 @@ export function curatedContent(client, db) {
   });
 
   client.on('messageReactionRemove', async (reaction, user) => {
+    console.log("reaction");
     if( !await isCuratorReaction(user, reaction) ) return;
     console.log("message reaction removed");
   });
