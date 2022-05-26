@@ -89,6 +89,7 @@ export function curatedContent(client, db) {
 
   client.on('messageReactionRemove', () => fetchMessagesToCache(client));
   client.on('messageReactionAdd', () => fetchMessagesToCache(client));
+  client.on('messageCreate', () => fetchMessagesToCache(client).then(client.sweepMessages));
 }
 
 export function voteResults(client, emitter, db) {
