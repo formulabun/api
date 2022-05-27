@@ -11,7 +11,7 @@ const {
   discord_curator_emoji,
   kart_ip,
   kart_port,
-  INTERVAL,
+  interval,
 } = dotenv.config().parsed;
 
 export function getContentFromMessage(message) {
@@ -57,7 +57,7 @@ async function startClient() {
         client.error = error;
       }
     );
-  }, parseInt(INTERVAL));
+  }, parseInt(interval));
 
   process.on('exit', () => 
     client.destroy()
